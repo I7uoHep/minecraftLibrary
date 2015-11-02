@@ -1,0 +1,22 @@
+{
+    "name": "mpal/mpal",
+    "description": "Library for minecraft personal area creators",
+    "type": "package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "weirdGuy",
+            "email": "I7uoHep@users.noreply.github.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0",
+        "vlucas/phpdotenv": "^2.1@dev"
+    },
+    "autoload": {
+        "psr-0": {
+            "MPAL\\": "src/"
+        }
+    }
+}
