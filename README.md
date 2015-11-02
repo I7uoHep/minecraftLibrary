@@ -5,7 +5,7 @@
 Для того что бы установить **MPAL** нужно сделать несколько простых шагов:
 * Composer
 ```sh
-    composer require mpal/mpal
+    composer require mpal/mpal dev-master
 ```
 * Переименовать файл **.env.example** в **.env** и установить свои переменные в нём
 * В .php файле добавить
