@@ -5,7 +5,7 @@
 Для того что бы установить **MPAL** нужно сделать несколько простых шагов:
 * Composer
 ```sh
-    composer require mpal/mpal
+    composer require mpal/mpal dev-master
 ```
 * В .php файле добавить
 ```sh
