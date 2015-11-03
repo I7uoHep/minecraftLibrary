@@ -7,17 +7,27 @@
 ```sh
     composer require mpal/mpal
 ```
-* Переименовать файл **.env.example** в **.env** и установить свои переменные в нём
 * В .php файле добавить
 ```sh
     use MPAL\MPAL;
 ```
 
 ### Использование
+Укажите основные параметры в массиве $config
+```sh
+    $config = [
+        'DB_HOST' => 'localhost',
+        'DB_NAME' => 'test',
+        'DB_USER' => 'root',
+        'DB_PASS' => '',
+        'USERS_TABLE' => 'users',
+        'USERNAME_COLUMN' => 'username',
+    ];
+```
 Для начала использования, необходимо инициализировать скрипт следующим образом:
 *
 ```sh
-    $mpal = new MPAL();
+    $mpal = new MPAL($config);
 ```
 
 Далее использовать все возможные функции.

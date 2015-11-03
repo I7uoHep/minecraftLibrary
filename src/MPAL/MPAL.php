@@ -2,7 +2,6 @@
 
     namespace MPAL;
 
-    use Dotenv\Dotenv;
     use \PDO;
 
     class MPAL {
@@ -11,24 +10,23 @@
 
         private $usertable;
         private $usercolumn;
-        private $permissionstable;
-        private $pexgrouptable;
+        private $permissionstable = 'permissions_entity';
+        private $pexgrouptable = 'permissions';
 
-        public function __construct() {
-            $dotenv = new Dotenv(__DIR__);
-            $dotenv->load();
+        public function __construct($configs) {
 
-            $this->usertable = getenv('USERS_TABLE');
-            $this->usercolumn = getenv('USERNAME_COLUMN');
-            $this->permissionstable = getenv('PERMISSIONS_TABLE');
-            $this->pexgrouptable = getenv('PEXGROUPS_TABLE');
+            $this->usertable = $configs['USERS_TABLE'];
+            $this->usercolumn = $configs['USERNAME_COLUMN'];
 
             $this->db = new PDO(
-                    "mysql:host=".getenv('DB_HOST').";
-                     dbname=".getenv('DB_NAME').";
+                    "mysql:host=".$configs['DB_HOST'].";
+                     dbname=".$configs['DB_NAME'].";
                      charset=utf8",
-                     getenv('DB_USER'),
-                     getenv('DB_PASS')
+                     $configs['DB_USER'],
+                     $configs['DB_PASS'],
+                     [
+                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                     ]
             );
             if(!$this->db) echo 'Database connection error';
         }
@@ -42,10 +40,11 @@
          * @return (bool)
          */
 
-        public function addFunds($username, $amount) {
+        public function addFunds($username, $amount, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("UPDATE ".$this->usertable." SET money = money + ? WHERE ".$this->usercolumn." = ?");
 
-            if(!$query->execute([$amount, $username])) {
+            if(!$this->ExecuteQuery($query, [$amount, $username])) {
                 return false;
             }
             return true;
@@ -61,11 +60,11 @@
          * @return (bool)
          */
 
-        public function removeFunds($username, $amount) {
-
+        public function removeFunds($username, $amount, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("UPDATE ".$this->usertable." SET money = money - ? WHERE ".$this->usercolumn." = ?");
 
-            if(!$query->execute([$amount, $username])) {
+            if(!$this->ExecuteQuery($query, [$amount, $username])) {
                 return false;
             }
             return true;
@@ -81,11 +80,11 @@
          * @return (bool)
          */
 
-        public function prefixChange($username, $prefix) {
-
+        public function prefixChange($username, $prefix, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("UPDATE ".$this->permissionstable." SET `prefix` = ? WHERE `name` = ?");
 
-            if(!$query->execute([$prefix, $username])) {
+            if(!$this->ExecuteQuery($query, [$prefix, $username])) {
                 return false;
             }
             return true;
@@ -101,11 +100,11 @@
          * @return (bool)
          */
 
-        public function suffixChange($username, $suffix) {
-
+        public function suffixChange($username, $suffix, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("UPDATE ".$this->permissionstable." SET `suffix` = ? WHERE `name` = ?");
 
-            if(!$query->execute([$suffix, $username])) {
+            if(!$this->ExecuteQuery($query, [$suffix, $username])) {
                 return false;
             }
             return true;
@@ -122,11 +121,11 @@
          * @return (bool)
          */
 
-        public function groupChange($username, $group) {
-
+        public function groupChange($username, $group, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("UPDATE ".$this->permissionstable." SET `type` = ? WHERE `name` = ?");
 
-            if(!$query->execute([$group, $username])) {
+            if(!$this->ExecuteQuery($query, [$group, $username])) {
                 return false;
             }
             return true;
@@ -146,17 +145,15 @@
          * @return (bool)
          */
 
-        public function groupCreate($name, $type, $permission, $world, $value) {
-
+        public function groupCreate($name, $type, $permission, $world, $value, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare(
             "INSERT INTO ".$this->pexgrouptable." (name, type, permission, world, value)
-             SELECT * FROM (SELECT :name, :type, :permission, :world, :value) AS tmp
-             WHERE NOT EXISTS (
-                 SELECT name FROM ".$this->pexgrouptable." WHERE name = :name
-             ) LIMIT 1"
+             VALUES (:name, :type, :permission, :world, :value)
+             ON DUPLICATE KEY UPDATE name = :name"
         );
 
-            if(!$query->execute([
+            if(!$this->ExecuteQuery($query, [
                 'name' => $name,
                 'type' => $type,
                 'permission' => $permission,
@@ -178,33 +175,66 @@
          * @return (bool)
          */
 
-        public function groupDelete($name) {
-
+        public function groupDelete($name, $null = null) {
+            $this->nullCheck($null);
             $query = $this->db->prepare("
             update
             	".$this->permissionstable."
             set
             	".$this->permissionstable.".type = 0
             where
-            	".$this->permissionstable.".type = (select ".$this->pexgrouptable.".type from ".$this->pexgrouptable." where ".$this->pexgrouptable.".name = :name);
+            	".$this->permissionstable.".type = (select ".$this->pexgrouptable.".type from ".$this->pexgrouptable." where ".$this->pexgrouptable.".name = :name limit 1);
             delete from
             	".$this->pexgrouptable."
             where
             	".$this->pexgrouptable.".name = :name
                 ");
 
-            if(!$query->execute(['name' => $name])) {
+            if(!$this->ExecuteQuery($query, ['name' => $name])) {
                 return false;
             }
 
             return true;
 
         }
-/*
+
+        /**
+         * ExecuteQuery
+         * Runs query
+         *
+         * @param (PDO $query) query object
+         * @param (array $params) array with params for query
+         * @return (bool) or (exception)
+         */
+
+        private function ExecuteQuery($query, $params) {
+            try {
+                $query->execute($params);
+                return true;
+
+            } catch(PDOException $e) {
+                return 'Error: ' . $e->getMessage();
+            }
+        }
+
+        /**
+         * nullCheck
+         * Check is the method overloaded?
+         *
+         * @param (null $data) null
+         */
+
+        private function nullCheck($data) {
+            if($data !== null) {
+                echo 'Wrong parametrs';
+                die();
+            }
+        }
+
         public function __destruct() {
 
-            $this->mysqli->close();
+            $this->db = null;
 
         }
-*/
+
     }

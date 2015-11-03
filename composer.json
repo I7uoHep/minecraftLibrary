@@ -10,13 +10,11 @@
             "email": "I7uoHep@users.noreply.github.com"
         }
     ],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "require": {
-        "php": ">=5.3.0",
-        "vlucas/phpdotenv": "^2.1@dev"
+        "php": ">=5.3.0"
     },
     "require-dev": {
-        "vlucas/phpdotenv": "^2.1@dev"
     },
     "autoload": {
         "psr-0": {
